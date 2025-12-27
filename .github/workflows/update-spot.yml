@@ -30,7 +30,7 @@ jobs:
           # NOTE: YOU MAY NEED TO ADJUST THE JQ PATH ONCE WE SEE THE EXACT RESPONSE SHAPE.
           sudo apt-get update && sudo apt-get install -y jq
 
-          PRICE=$(jq -r '.price // .spot // .data.price // empty' assets/data/spot_raw.json)
+          PRICE=$(jq -r '.rate.price // .price // .spot // .data.price // empty' assets/data/spot_raw.json)
 
           if [ -z "$PRICE" ]; then
             echo "Could not parse price from response:"
