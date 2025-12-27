@@ -1,0 +1,26 @@
+
+<h1>Silver Stack Value Calculator</h1>
+
+<p>Estimate to the current value of your silver holdings.</p>
+<label>
+  Ounces owned:
+  <input type="number" id="ounces" step="0.01" min="0">
+</label>
+
+<button onclick="calc()">Calculate</button>
+
+<p id="result"></p>
+
+<script>
+async function calc() {
+    const oz = Number(document.getElementById("ounces").value);
+    if (!oz) return;
+
+    const res = await fetch("/assets/data/spot.json?v=" + Date.now());
+    const data = await res.json();
+
+    const value = oz * data.price;
+    document.getElementById("result").textContent =
+      `Estimated value: $${value.toFixed(2)} USD`;
+  }
+</script>

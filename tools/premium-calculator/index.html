@@ -1,0 +1,168 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Silver Premium Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale-1.0">
+  <meta name="description" content="Calculate how much over spot you're paying for silver (premium $ and premium %).">
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+
+<body>
+  <header>
+    <div class="nav">
+      <div class="brand"><span class="dot"></span>Silver Made Simple</div>
+      <nav class="navlinks">
+        <a href="/">Home</a> |
+        <a href="/education/">Education</a> |
+        <a href="/buying/">Buying</a> |
+        <a href="/storage/">Storage</a> |
+        <a href="/tools/">Tools</a> |
+        <a href="/articles/">Articles</a> |
+        <a href="/about/">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section">
+      <h1>Silver Premium Calculator</h1>
+      <p>
+        Enter what you're paying and how many ounces you're buying.
+        This tool compares it to live spot price and shows your premium.
+      </p>
+
+      <div class="card" style="max-width: 720px;">
+        <h3>Inputs</h3>
+
+        <p>
+          <strong>Current spot:</strong>
+          <span id="spot">Loading...</span>
+          <br>
+          <small id="spot-updated"></small>
+        </p>
+
+        <label style="display:block; margin-top:12px;">
+          Total purchase price (USB):
+          <input type="number" id="totalPrice" step="0.01" min="0" placeholder="e.g., 289.99" style="width:100%; margin-top:6px;">
+        </label>
+
+        <label style="display:block; margin-top:12px;">
+          Total ounces purchased (troy ox):
+          <input type="number" id="ounces" step="0.01" min="0"  placeholder="e.g. 10" style="width:100%; margin-top:6px;">
+        </label>
+
+        <label style="display:block; margin-top:12px;">
+          Shipping/ fees (optional, USD):
+          <input type="number" id="fees" step="0.01" min="0" value="0" style="width:100%; margin-top: 6px;">
+        </label>
+
+        <div class="btnrow" style="margin-top:14px;">
+          <button class="btn primary" id="calcBtn" type="button">Calculate</button>
+          <button class="btn" id="resetBtn" type="button">Reset</button>
+        </div>
+
+        <div id="resultBox" class="callout" style="margin-top:14px; display:none;">
+          <strong>RESULT:</strong>
+          <div id="resultText" style="margin-top:8px;"></div>
+        </div>
+
+        <p style="margin-top:12px;">
+          <small>
+            Notes: "Premium" is how much you pay above spot. Premiums vary by product type (coins vs bars),
+            market demand, and dealer costs.
+          </small>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      Educational content only. Some links may be affiliate links.
+    </div>
+  </footer>
+
+  <script>
+    let spotPrice = null;
+    
+    function money(n) {
+      return `$${Number(n).toFixed(2)}`;
+    }
+
+    async function loadSpot() {
+      const spotEl = document.getElementById("spot");
+      const updatedEl = document.getElementById("spot-updated");
+
+      try {
+        const res = await fetch(`/assets/data/spot.json?v=${Date.now()}`, { cache: "no-store" });
+        const data = await res.json();
+
+        spotPrice = Number(data.price);
+        spotEl.textContent = money(spotPrice);
+        updatedEl.textContent = `Updated: ${data.updated_utc} (UTC)`;
+      } catch (e) {
+        console.error("Failed to load spot.json:", e);
+        spotEl.textContent = "-";
+        updatedEl.textContent = "";
+        spotPrice = null;
+      }
+    }
+
+    function calculate() {
+      const resultBox = document.getElementById("resultBox");
+      const resultText = document.getElementById("resultText");
+
+      const totalPrice = Number(document.getElementById("totalPrice").value);
+      const ounces = Number(document.getElementById("ounces").value);
+      const fees = Number(document.getElementById("fees").value || 0);
+
+      resultBox.style.display = "block";
+
+      if (!spotPrice || spotPrice <= 0) {
+        resultText.textContent = "Spot price isn't available right now. Try again in a moment.";
+        return;
+      }
+
+      if (!totalPrice || totalPrice <= 0 || !ounces || ounces <= 0) {
+        resultText.textContent = "Enter a valid total purchase price and total ounces.";
+        return;
+      }
+
+      const totalPaid = totalPrice + fees;
+      const effectivePerOz = totalPaid / ounces;
+      const premiumPerOz = effectivePerOz - spotPrice;
+      const premiumTotal = premiumPerOz * ounces;
+      const premiumPct = (premiumPerOz / spotPrice) * 100;
+
+      const sign = premiumPerOz > 0 ? "+" : "";
+
+      resultText.innerHTML = `
+        <div><strong>Effective price per oz:</strong> ${money(effectivePerOz)}</div>
+        <div><strong>Premium per oz:</strong> ${sign}${money(premiumPerOz)}</div>
+        <div><strong>Total premium:</strong> ${sign}${money(premiumTotal)}</div>
+        <div><strong>Premium %:</strong> ${sign}${premiumPct.toFixed(2)}%</div>
+        <div style="margin-top:10px;"><small>
+          Spot value of your ounces: ${money(spotPrice * ounces)}<br>
+          Total paid (including fees): ${money(totalPaid)}
+        </small></div>
+      `;
+    }
+
+    function resetForm() {
+      document.getElementById("totalPrice").value = "";
+      document.getElementById("ounces").value = "";
+      document.getElementById("fees").value = "0";
+      document.getElementById("resultBox").style.display = "none";
+      document.getElementById("resultText").textContent = "";
+    }
+
+    document.getElementById("calcBtn").addEventListener("click", calculate);
+    document.getElementById("resetBtn").addEventListener("click", resetForm);
+
+    loadSpot();
+  </script>
+</body>
+</html>
