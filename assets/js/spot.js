@@ -5,12 +5,15 @@ async function loadSpot() {
   const updated = document.getElementById("spot-silver-updated");
 
   try {
-    const res = await fetch("/assets/data/spot.json", { cache: "no-store" });
+    const res = await fetch(`/assets/data/spot.json?v=${Date.now()}`,{
+      cache: "no-store"
+    });
     const data = await res.json();
 
     el.textContent = `$${Number(data.price).toFixed(2)}`;
     updated.textContent = `Updated: ${data.updated_utc} (UTC)`;
   } catch (e) {
+    console.error("Spot price load failed:", e);
     el.textContent = "-";
     if (updated) updated.textContent = "";
   }
