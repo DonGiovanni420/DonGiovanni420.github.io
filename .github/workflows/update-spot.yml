@@ -31,6 +31,9 @@ jobs:
           sudo apt-get update && sudo apt-get install -y jq
 
           PRICE=$(jq -r '.rate.price // .price // .spot // .data.price // empty' assets/data/spot_raw.json)
+          CHANGE=$(jq -r '.rate.change // empty' assets/data/spot_raw.json)
+          CHANGE_PCT=$(jq -r '.rate.change_percent // empty' assets/data/spot_raw.json)
+
 
           if [ -z "$PRICE" ]; then
             echo "Could not parse price from response:"
@@ -38,9 +41,19 @@ jobs:
             exit 1
           fi
 
-          jq -n --arg price "$PRICE" --arg updated "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-            '{ metal:"silver", currency:"USD", price: ($price|tonumber), updated_utc:$updated }' \
-            > assets/data/spot.json
+          jq -n \
+            --arg updated "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            --arg price "$PRICE" \
+            --arg change "$CHANGE" \
+            --arg change_pct "$CHANGE_PCT" \
+            '{
+              metal:"silver",
+              currency:"USD",
+              price: ($price|tonumber),
+              change_24h: ($change|tonumber),
+              change_percent_24h: ($change_pct|tonumber),
+              updated_utc:$updated
+            }' > assets/data/spot.json
 
       - name: Commit and push if changed
         run: |
