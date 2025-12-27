@@ -39,7 +39,7 @@ jobs:
           fi
 
           jq -n --arg price "$PRICE" --arg updated "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-            '{ metal:"silver", currency:"USD", price" ($price|tonumber), updated_utc:$updated }' \
+            '{ metal:"silver", currency:"USD", price: ($price|tonumber), updated_utc:$updated }' \
             > assets/data/spot.json
 
       - name: Commit and push if changed
