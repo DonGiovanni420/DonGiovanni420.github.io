@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+        <link rel="stylesheet" href="assets/silver_trader.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silver Trader & Collector</title>
+    
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Silver Trader & Collector 💰</h1>
+            <div class="stats">
+                <div class="stat">
+                    Cash: $<span class="stat-value" id="cash">1000</span>
+                </div>
+                <div class="stat">
+                    Net Worth: $<span class="stat-value" id="netWorth">1000</span>
+                </div>
+                <div class="stat">
+                    Collection: <span class="stat-value" id="collectionCount">0</span> items
+                </div>
+            </div>
+
+						<div class="mobile-tabs" id="mobileTabs" aria-label="Section tabs">
+  						<button class="tab active" data-target="panel-market" type="button">Market</button>
+  						<button class="tab" data-target="panel-vault" type="button">Vault</button>
+  						<button class="tab" data-target="panel-log" type="button">Log</button>
+						</div>
+
+            <div class="save-load-buttons">
+                <button class="save-btn" onclick="game.saveGame()">💾 Save Game</button>
+                <button class="load-btn" onclick="game.loadGame()">📂 Load Game</button>
+                <button class="new-game-btn" onclick="game.newGame()">🆕 New Game</button>
+            </div>
+
+						<div class="main-tabs" id="mainTabs" aria-label="Main tabs">
+							<button class="tab active" data-main="trade" type="button">Trade</button>
+							<button class="tab" data-main="upgrades" type="button">Upgrades</button>
+							<button class="tab" data-main="achievements" type="button">Achievements</button>
+							<button class="tab" data-main="income" type="button">Income</button>
+						</div>
+        </header>
+
+        <div class="city-panel">
+            <div class="current-city">
+                <div>
+                    <div class="city-name">🗽 <span id="currentCityName">New York</span></div>
+                    <div class="city-specialty" id="citySpecialty">Financial Hub - Balanced Market</div>
+                </div>
+                <button class="travel-btn" onclick="game.showCitySelector()">✈️ Travel</button>
+            </div>
+            <div class="city-grid" id="cityGrid"></div>
+        </div>
+
+        <div class="game-area" data-main-panel="trade">
+            <div class="panel">
+                <h2>📈 Silver Market</h2>
+                <div id="marketTrend"></div>
+                <div id="newsTicker"></div>
+                <button onclick="game.refreshMarket()" style="margin-bottom: 15px; width: 100%;">
+                    🔄 Refresh Market (Costs $<span id="refreshCost">50</span>)
+                </button>
+                <div class="market-items" id="marketItems"></div>
+            </div>
+
+            <div class="panel">
+                <h2>🏦 Your Vault</h2>
+                <div class="vault-grid" id="vaultGrid"></div>
+            </div>
+
+            <div class="panel">
+                <h2>📜 Transaction Log</h2>
+                <div class="log-stats">
+                    <div class="log-stat">
+                        <div>Total Profit</div>
+                        <div class="log-stat-value" id="totalProfit">$0</div>
+                    </div>
+                    <div class="log-stat">
+                        <div>Transactions</div>
+                        <div class="log-stat-value" id="totalTransactions">0</div>
+                    </div>
+                </div>
+                <div class="transaction-log" id="transactionLog"></div>
+            </div>
+        </div>
+
+        <div class="upgrades" data-main-panel="upgrades">
+            <h2>⚡ Upgrades</h2>
+            <div class="upgrade-grid" id="upgradeGrid"></div>
+        </div>
+
+        <div class="achievements-panel" data-main-panel="achievements">
+            <h2>🏆 Achievements <span class="stat-badge" id="achievementCount">0/0 Unlocked</span></h2>
+            <div class="achievement-grid" id="achievementGrid"></div>
+        </div>
+
+        <div class="income-panel" data-main-panel="income">
+            <h2>💵 Income Opportunities</h2>
+            <div class="income-grid">
+                <div class="income-card">
+                    <h3>📅 Daily Bonus</h3>
+                    <div class="income-card-content" id="dailyBonusContent"></div>
+                </div>
+                <div class="income-card">
+                    <h3>📋 Trading Contracts</h3>
+                    <div class="income-card-content" id="missionsContent"></div>
+                </div>
+                <div class="income-card">
+                    <h3>📊 Market Futures</h3>
+                    <div class="income-card-content" id="predictionsContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SilverItem {
+            constructor(type, name, basePrice, rarity, icon, isFlashSale = false) {
+                this.type = type;
+                this.name = name;
+                this.basePrice = basePrice;
+                this.rarity = rarity;
+                this.icon = icon;
+                this.isFlashSale = isFlashSale;
+                this.currentPrice = this.calculatePrice();
+            }
+
+            calculatePrice(marketTrend = 1) {
+                let variance = 0.7 + Math.random() * 0.6; // 70% to 130%
+                if (this.isFlashSale) {
+                    variance *= 0.6; // 40% off for flash sales!
+                }
+                return Math.round(this.basePrice * variance * marketTrend);
+            }
+
+            refresh(marketTrend = 1) {
+                this.currentPrice = this.calculatePrice(marketTrend);
+            }
+        }
+
+        const ITEM_TEMPLATES = {
+            coins: [
+                { name: "Morgan Silver Dollar", basePrice: 35, rarity: "common", icon: "🪙" },
+                { name: "American Silver Eagle", basePrice: 45, rarity: "common", icon: "🦅" },
+                { name: "Canadian Maple Leaf", basePrice: 42, rarity: "common", icon: "🍁" },
+                { name: "Mercury Dime", basePrice: 25, rarity: "uncommon", icon: "💿" },
+                { name: "Walking Liberty Half", basePrice: 65, rarity: "uncommon", icon: "🗽" },
+                { name: "1804 Silver Dollar", basePrice: 450, rarity: "rare", icon: "👑" },
+                { name: "Flowing Hair Dollar", basePrice: 850, rarity: "epic", icon: "💎" },
+                { name: "1933 Double Eagle", basePrice: 2500, rarity: "legendary", icon: "🌟" }
+            ],
+            bars: [
+                { name: "1oz Silver Bar", basePrice: 30, rarity: "common", icon: "▬" },
+                { name: "5oz Silver Bar", basePrice: 140, rarity: "uncommon", icon: "▬▬" },
+                { name: "10oz Silver Bar", basePrice: 280, rarity: "uncommon", icon: "▬▬▬" },
+                { name: "1 Kilo Silver Bar", basePrice: 850, rarity: "rare", icon: "▬▬▬▬" },
+                { name: "100oz Silver Bar", basePrice: 2800, rarity: "epic", icon: "▬▬▬▬▬" },
+                { name: "COMEX Silver Bar", basePrice: 6500, rarity: "legendary", icon: "✨▬✨" }
+            ],
+            rounds: [
+                { name: "Generic Silver Round", basePrice: 28, rarity: "common", icon: "⭕" },
+                { name: "Buffalo Silver Round", basePrice: 35, rarity: "common", icon: "🦬" },
+                { name: "Aztec Calendar Round", basePrice: 55, rarity: "uncommon", icon: "☀️" },
+                { name: "Year of the Dragon", basePrice: 120, rarity: "rare", icon: "🐉" },
+                { name: "Privateer Series", basePrice: 280, rarity: "epic", icon: "⚓" },
+                { name: "Mythical Creatures Set", basePrice: 950, rarity: "legendary", icon: "🔱" }
+            ]
+        };
+
+        const RARITY_WEIGHTS = {
+            common: 50,
+            uncommon: 30,
+            rare: 15,
+            epic: 4,
+            legendary: 1
+        };
+
+        const NEWS_EVENTS = [
+            { text: "📰 Silver demand surges in tech industry!", effect: "bull", category: "all" },
+            { text: "📰 New silver mine discovered in Nevada!", effect: "bear", category: "all" },
+            { text: "📰 Collectors scrambling for rare coins!", effect: "bull", category: "coins" },
+            { text: "📰 Industrial demand for silver bars drops.", effect: "bear", category: "bars" },
+            { text: "📰 Mint announces limited edition rounds!", effect: "bull", category: "rounds" },
+            { text: "📰 Market stabilizes after recent volatility.", effect: "neutral", category: "all" },
+            { text: "📰 Historic auction breaks silver records!", effect: "bull", category: "coins" },
+            { text: "📰 Silver prices fluctuate amid uncertainty.", effect: "neutral", category: "all" }
+        ];
+
+        const CITIES = {
+            newyork: {
+                name: "New York",
+                icon: "🗽",
+                specialty: "Financial Hub - Balanced Market",
+                priceMultipliers: { coins: 1.0, bars: 1.0, rounds: 1.0 },
+                rarityBonus: { coins: 0, bars: 0, rounds: 0 }
+            },
+            london: {
+                name: "London",
+                icon: "🏰",
+                specialty: "Rare Coins Specialist",
+                priceMultipliers: { coins: 1.15, bars: 0.95, rounds: 1.0 },
+                rarityBonus: { coins: 5, bars: 0, rounds: 0 }
+            },
+            dubai: {
+                name: "Dubai",
+                icon: "🏙️",
+                specialty: "Premium Bars & Luxury",
+                priceMultipliers: { coins: 1.05, bars: 1.2, rounds: 1.0 },
+                rarityBonus: { coins: 0, bars: 5, rounds: 0 }
+            },
+            tokyo: {
+                name: "Tokyo",
+                icon: "🗼",
+                specialty: "Tech Hub - Fast Markets",
+                priceMultipliers: { coins: 1.1, bars: 1.05, rounds: 1.1 },
+                rarityBonus: { coins: 2, bars: 2, rounds: 2 }
+            },
+            singapore: {
+                name: "Singapore",
+                icon: "🦁",
+                specialty: "Low Taxes - Best Prices",
+                priceMultipliers: { coins: 0.85, bars: 0.85, rounds: 0.85 },
+                rarityBonus: { coins: 0, bars: 0, rounds: 0 }
+            },
+            hongkong: {
+                name: "Hong Kong",
+                icon: "🌃",
+                specialty: "High Volume Trading",
+                priceMultipliers: { coins: 0.95, bars: 0.9, rounds: 0.95 },
+                rarityBonus: { coins: 0, bars: 0, rounds: 0 }
+            },
+            zurich: {
+                name: "Zurich",
+                icon: "🏔️",
+                specialty: "Swiss Banking - Premium Items",
+                priceMultipliers: { coins: 1.25, bars: 1.3, rounds: 1.1 },
+                rarityBonus: { coins: 8, bars: 8, rounds: 3 }
+            },
+            mumbai: {
+                name: "Mumbai",
+                icon: "🕌",
+                specialty: "Emerging Market - High Volatility",
+                priceMultipliers: { coins: 0.8, bars: 0.9, rounds: 0.85 },
+                rarityBonus: { coins: -2, bars: 0, rounds: 0 }
+            },
+            mexicocity: {
+                name: "Mexico City",
+                icon: "🌮",
+                specialty: "Mining Hub - Cheap Bars",
+                priceMultipliers: { coins: 0.95, bars: 0.7, rounds: 0.9 },
+                rarityBonus: { coins: 0, bars: -2, rounds: 0 }
+            },
+            sydney: {
+                name: "Sydney",
+                icon: "🦘",
+                specialty: "Rounds & Collectibles",
+                priceMultipliers: { coins: 1.0, bars: 1.05, rounds: 0.8 },
+                rarityBonus: { coins: 0, bars: 0, rounds: 7 }
+            },
+            shanghai: {
+                name: "Shanghai",
+                icon: "🏮",
+                specialty: "Manufacturing Hub - Volume Discounts",
+                priceMultipliers: { coins: 0.88, bars: 0.82, rounds: 0.85 },
+                rarityBonus: { coins: 1, bars: 1, rounds: 1 }
+            },
+            toronto: {
+                name: "Toronto",
+                icon: "🍁",
+                specialty: "Canadian Mint - Maple Leaf Specialist",
+                priceMultipliers: { coins: 0.92, bars: 0.95, rounds: 0.9 },
+                rarityBonus: { coins: 3, bars: 2, rounds: 2 }
+            }
+        };
+
+        // Distance matrix - travel time in seconds between cities
+        const CITY_DISTANCES = {
+            newyork: { newyork: 0, london: 45, dubai: 75, tokyo: 80, singapore: 90, hongkong: 85, zurich: 50, mumbai: 80, mexicocity: 25, sydney: 95, shanghai: 85, toronto: 15 },
+            london: { newyork: 45, london: 0, dubai: 40, tokyo: 70, singapore: 75, hongkong: 70, zurich: 15, mumbai: 50, mexicocity: 60, sydney: 95, shanghai: 70, toronto: 45 },
+            dubai: { newyork: 75, london: 40, dubai: 0, tokyo: 55, singapore: 45, hongkong: 50, zurich: 35, mumbai: 20, mexicocity: 85, sydney: 75, shanghai: 50, toronto: 75 },
+            tokyo: { newyork: 80, london: 70, dubai: 55, tokyo: 0, singapore: 40, hongkong: 20, zurich: 65, mumbai: 50, mexicocity: 85, sydney: 55, shanghai: 15, toronto: 75 },
+            singapore: { newyork: 90, london: 75, dubai: 45, tokyo: 40, singapore: 0, hongkong: 25, zurich: 70, mumbai: 35, mexicocity: 95, sydney: 45, shanghai: 30, toronto: 90 },
+            hongkong: { newyork: 85, london: 70, dubai: 50, tokyo: 20, singapore: 25, hongkong: 0, zurich: 65, mumbai: 40, mexicocity: 90, sydney: 50, shanghai: 15, toronto: 85 },
+            zurich: { newyork: 50, london: 15, dubai: 35, tokyo: 65, singapore: 70, hongkong: 65, zurich: 0, mumbai: 45, mexicocity: 65, sydney: 90, shanghai: 65, toronto: 50 },
+            mumbai: { newyork: 80, london: 50, dubai: 20, tokyo: 50, singapore: 35, hongkong: 40, zurich: 45, mumbai: 0, mexicocity: 90, sydney: 70, shanghai: 45, toronto: 80 },
+            mexicocity: { newyork: 25, london: 60, dubai: 85, tokyo: 85, singapore: 95, hongkong: 90, zurich: 65, mumbai: 90, mexicocity: 0, sydney: 95, shanghai: 90, toronto: 30 },
+            sydney: { newyork: 95, london: 95, dubai: 75, tokyo: 55, singapore: 45, hongkong: 50, zurich: 90, mumbai: 70, mexicocity: 95, sydney: 0, shanghai: 55, toronto: 95 },
+            shanghai: { newyork: 85, london: 70, dubai: 50, tokyo: 15, singapore: 30, hongkong: 15, zurich: 65, mumbai: 45, mexicocity: 90, sydney: 55, shanghai: 0, toronto: 85 },
+            toronto: { newyork: 15, london: 45, dubai: 75, tokyo: 75, singapore: 90, hongkong: 85, zurich: 50, mumbai: 80, mexicocity: 30, sydney: 95, shanghai: 85, toronto: 0 }
+        };
+
+        class Game {
+            constructor() {
+                this.cash = 1000;
+                this.vault = {};
+                this.market = [];
+                this.refreshCost = 50;
+                this.vaultCapacity = 50;
+                this.marketSize = 8;
+                this.upgrades = {
+                    vaultSpace: { level: 0, cost: 500, bought: false },
+                    betterMarket: { level: 0, cost: 300, bought: false },
+                    luckyFinder: { level: 0, cost: 800, bought: false }
+                };
+
+                // Trading stats
+                this.stats = {
+                    totalBuys: 0,
+                    totalSells: 0,
+                    totalSpent: 0,
+                    totalEarned: 0,
+                    legendariesFound: 0,
+                    maxNetWorth: 1000
+                };
+
+                // Transaction tracking
+                this.transactions = [];
+                this.purchasePrices = {}; // Track purchase prices for profit/loss calculation
+
+                // City and travel system
+                this.currentCity = 'newyork';
+                this.cityTrends = {}; // Each city has its own market trend
+                this.traveling = false;
+                this.travelProgress = 0;
+                this.travelDestination = null;
+                this.travelDuration = 30; // seconds
+                this.travelInterval = null;
+
+                // Initialize city trends
+                for (const cityKey in CITIES) {
+                    this.cityTrends[cityKey] = this.generateCityTrend();
+                }
+
+                // Market dynamics
+                this.marketTrend = this.cityTrends[this.currentCity];
+                this.currentNews = null;
+
+                // Income systems
+                this.dailyBonus = {
+                    lastClaim: null,
+                    streak: 0,
+                    baseReward: 100
+                };
+
+                this.missions = [
+                    { id: 1, name: "First Steps", desc: "Make 3 successful trades", reward: 150, progress: 0, target: 3, type: 'trades', completed: false },
+                    { id: 2, name: "Silver Hoarder", desc: "Own 10 silver items", reward: 200, progress: 0, target: 10, type: 'collection', completed: false },
+                    { id: 3, name: "Profit Maker", desc: "Earn $500 from sales", reward: 250, progress: 0, target: 500, type: 'profit', completed: false },
+                    { id: 4, name: "World Traveler", desc: "Visit 5 different cities", reward: 300, progress: 0, target: 5, type: 'cities', completed: false },
+                    { id: 5, name: "Legendary Hunter", desc: "Find 1 legendary item", reward: 500, progress: 0, target: 1, type: 'legendary', completed: false }
+                ];
+
+                this.citiesVisited = new Set([this.currentCity]);
+
+                this.marketPrediction = {
+                    active: false,
+                    targetCity: null,
+                    prediction: null, // 'bull' or 'bear'
+                    betAmount: 0,
+                    startTrend: 0,
+                    timeRemaining: 0,
+                    duration: 60 // seconds
+                };
+
+                // Achievements
+                this.achievements = {
+                    firstBuy: { name: "First Purchase", desc: "Buy your first silver item", icon: "🛒", unlocked: false, check: () => this.stats.totalBuys >= 1 },
+                    firstSale: { name: "First Sale", desc: "Sell your first silver item", icon: "💰", unlocked: false, check: () => this.stats.totalSells >= 1 },
+                    collector10: { name: "Small Collection", desc: "Own 10 items", icon: "📦", unlocked: false, check: () => this.getTotalVaultItems() >= 10 },
+                    collector50: { name: "Serious Collector", desc: "Own 50 items", icon: "🏛️", unlocked: false, check: () => this.getTotalVaultItems() >= 50 },
+                    richTrader: { name: "Silver Baron", desc: "Reach $5,000 net worth", icon: "👑", unlocked: false, check: () => this.getNetWorth() >= 5000 },
+                    millionaire: { name: "Silver Tycoon", desc: "Reach $10,000 net worth", icon: "💎", unlocked: false, check: () => this.getNetWorth() >= 10000 },
+                    legendHunter: { name: "Legend Hunter", desc: "Find a legendary item", icon: "⭐", unlocked: false, check: () => this.stats.legendariesFound >= 1 },
+                    bigSpender: { name: "Big Spender", desc: "Spend $5,000 total", icon: "💸", unlocked: false, check: () => this.stats.totalSpent >= 5000 },
+                    marketExpert: { name: "Market Expert", desc: "Complete 50 transactions", icon: "📊", unlocked: false, check: () => (this.stats.totalBuys + this.stats.totalSells) >= 50 },
+                    profitMaster: { name: "Profit Master", desc: "Earn $3,000 from sales", icon: "🤑", unlocked: false, check: () => this.stats.totalEarned >= 3000 }
+                };
+
+                this.init();
+            }
+
+            init() {
+                this.generateNewsEvent();
+                this.generateMarket();
+                this.updateUI();
+                this.setupUpgrades();
+                this.renderAchievements();
+                this.renderCityGrid();
+                this.renderIncomePanel();
+                this.updateMissionProgress();
+                setInterval(() => this.autoRefreshMarket(), 30000); // Auto refresh every 30 seconds
+                setInterval(() => {
+                    this.updateAllCityTrends();
+                    this.generateNewsEvent();
+                    this.renderCityGrid();
+                }, 45000); // Update city trends and news every 45 seconds
+            }
+
+            generateCityTrend() {
+                const rand = Math.random();
+                if (rand < 0.3) {
+                    return 0.8 + Math.random() * 0.15; // Bear: 0.8-0.95
+                } else if (rand < 0.6) {
+                    return 1.05 + Math.random() * 0.15; // Bull: 1.05-1.20
+                } else {
+                    return 0.95 + Math.random() * 0.1; // Neutral: 0.95-1.05
+                }
+            }
+
+            updateAllCityTrends() {
+                // Update trend for each city independently
+                for (const cityKey in CITIES) {
+                    this.cityTrends[cityKey] = this.generateCityTrend();
+                }
+                this.marketTrend = this.cityTrends[this.currentCity];
+            }
+
+            generateNewsEvent() {
+                if (Math.random() < 0.7) { // 70% chance of news
+                    this.currentNews = NEWS_EVENTS[Math.floor(Math.random() * NEWS_EVENTS.length)];
+                } else {
+                    this.currentNews = null;
+                }
+            }
+
+            generateMarket() {
+                this.market = [];
+                const itemCount = this.marketSize + (this.upgrades.betterMarket.level * 2);
+
+                for (let i = 0; i < itemCount; i++) {
+                    const isFlashSale = Math.random() < 0.15; // 15% chance of flash sale
+                    const item = this.getRandomItem(isFlashSale);
+                    this.market.push(item);
+                }
+            }
+
+            getRandomItem(isFlashSale = false) {
+                const category = ['coins', 'bars', 'rounds'][Math.floor(Math.random() * 3)];
+                const items = ITEM_TEMPLATES[category];
+
+                // Get city-specific rarity bonus
+                const city = CITIES[this.currentCity];
+                const rarityBonus = city.rarityBonus[category];
+
+                const totalWeight = Object.values(RARITY_WEIGHTS).reduce((a, b) => a + b, 0);
+                let random = Math.random() * totalWeight;
+
+                // Apply lucky finder bonus and city bonus
+                if (this.upgrades.luckyFinder.level > 0 || rarityBonus > 0) {
+                    RARITY_WEIGHTS.legendary += this.upgrades.luckyFinder.level + (rarityBonus > 0 ? rarityBonus : 0);
+                    RARITY_WEIGHTS.epic += this.upgrades.luckyFinder.level + (rarityBonus > 0 ? rarityBonus / 2 : 0);
+                }
+
+                let selectedRarity = 'common';
+                for (const [rarity, weight] of Object.entries(RARITY_WEIGHTS)) {
+                    random -= weight;
+                    if (random <= 0) {
+                        selectedRarity = rarity;
+                        break;
+                    }
+                }
+
+                const rarityItems = items.filter(item => item.rarity === selectedRarity);
+                const template = rarityItems[Math.floor(Math.random() * rarityItems.length)];
+
+                // Apply city-specific price multiplier
+                const adjustedBasePrice = Math.round(template.basePrice * city.priceMultipliers[category]);
+
+                const item = new SilverItem(category, template.name, adjustedBasePrice, template.rarity, template.icon, isFlashSale);
+                item.refresh(this.marketTrend);
+                return item;
+            }
+
+            buyItem(index) {
+                const item = this.market[index];
+                if (this.cash >= item.currentPrice) {
+                    if (this.getTotalVaultItems() >= this.vaultCapacity) {
+                        this.showNotification("❌ Vault is full! Upgrade your vault space.");
+                        return;
+                    }
+
+                    this.cash -= item.currentPrice;
+                    this.stats.totalBuys++;
+                    this.stats.totalSpent += item.currentPrice;
+                    if (item.rarity === 'legendary') {
+                        this.stats.legendariesFound++;
+                    }
+
+                    // Log transaction
+                    this.transactions.unshift({
+                        type: 'buy',
+                        item: item.name,
+                        icon: item.icon,
+                        rarity: item.rarity,
+                        price: item.currentPrice,
+                        time: new Date().toLocaleTimeString(),
+                        isFlashSale: item.isFlashSale
+                    });
+
+                    this.addToVault(item, item.currentPrice);
+                    this.market.splice(index, 1);
+                    this.showNotification(`✅ Bought ${item.icon} ${item.name} for $${item.currentPrice}!`);
+                    this.checkAchievements();
+                    this.updateMissionProgress();
+                    this.updateUI();
+                } else {
+                    this.showNotification("❌ Not enough cash!");
+                }
+            }
+
+            sellItem(itemKey) {
+                const item = this.vault[itemKey];
+                if (item && item.count > 0) {
+                    const sellPrice = Math.round(item.template.currentPrice * 0.9); // Sell for 90% of current market price
+                    const avgPurchasePrice = this.purchasePrices[itemKey].avgPrice;
+                    const profit = sellPrice - avgPurchasePrice;
+
+                    this.cash += sellPrice;
+                    this.stats.totalSells++;
+                    this.stats.totalEarned += sellPrice;
+
+                    // Log transaction
+                    this.transactions.unshift({
+                        type: 'sell',
+                        item: item.template.name,
+                        icon: item.template.icon,
+                        rarity: item.template.rarity,
+                        price: sellPrice,
+                        costBasis: avgPurchasePrice,
+                        profit: profit,
+                        time: new Date().toLocaleTimeString()
+                    });
+
+                    item.count--;
+                    if (item.count === 0) {
+                        delete this.vault[itemKey];
+                        delete this.purchasePrices[itemKey];
+                    }
+
+                    const profitText = profit >= 0 ? `+$${profit} profit` : `-$${Math.abs(profit)} loss`;
+                    this.showNotification(`💵 Sold ${item.template.icon} ${item.template.name} for $${sellPrice}! (${profitText})`);
+                    this.checkAchievements();
+                    this.updateMissionProgress();
+                    this.updateUI();
+                }
+            }
+
+            addToVault(item, purchasePrice) {
+                const key = item.name;
+                if (this.vault[key]) {
+                    this.vault[key].count++;
+                    // Update average purchase price
+                    const totalCost = this.purchasePrices[key].avgPrice * this.purchasePrices[key].totalCount + purchasePrice;
+                    this.purchasePrices[key].totalCount++;
+                    this.purchasePrices[key].avgPrice = totalCost / this.purchasePrices[key].totalCount;
+                } else {
+                    this.vault[key] = { template: item, count: 1 };
+                    this.purchasePrices[key] = { avgPrice: purchasePrice, totalCount: 1 };
+                }
+            }
+
+            getTotalVaultItems() {
+                return Object.values(this.vault).reduce((sum, item) => sum + item.count, 0);
+            }
+
+            getNetWorth() {
+                let worth = this.cash;
+                for (const item of Object.values(this.vault)) {
+                    worth += item.template.currentPrice * item.count * 0.9;
+                }
+                return Math.round(worth);
+            }
+
+            refreshMarket() {
+                if (this.cash >= this.refreshCost) {
+                    this.cash -= this.refreshCost;
+                    this.generateMarket();
+
+                    // Also refresh vault item prices
+                    for (const key in this.vault) {
+                        this.vault[key].template.refresh(this.marketTrend);
+                    }
+
+                    this.showNotification("🔄 Market refreshed!");
+                    this.updateUI();
+                } else {
+                    this.showNotification("❌ Not enough cash to refresh!");
+                }
+            }
+
+            autoRefreshMarket() {
+                this.market.forEach(item => item.refresh(this.marketTrend));
+
+                // Also refresh vault item prices to match current market
+                for (const key in this.vault) {
+                    this.vault[key].template.refresh(this.marketTrend);
+                }
+
+                this.showNotification("📊 Market prices updated!");
+                this.updateUI();
+            }
+
+            checkAchievements() {
+                for (const [key, achievement] of Object.entries(this.achievements)) {
+                    if (!achievement.unlocked && achievement.check()) {
+                        achievement.unlocked = true;
+                        this.showAchievementNotification(achievement);
+                        this.renderAchievements();
+                    }
+                }
+            }
+
+            showAchievementNotification(achievement) {
+                const existing = document.querySelector('.achievement-notification');
+                if (existing) existing.remove();
+
+                const notification = document.createElement('div');
+                notification.className = 'achievement-notification';
+                notification.innerHTML = `${achievement.icon} Achievement Unlocked!<br><strong>${achievement.name}</strong>`;
+                document.body.appendChild(notification);
+
+                setTimeout(() => notification.remove(), 4000);
+            }
+
+            showCitySelector() {
+                const cityGrid = document.getElementById('cityGrid');
+                if (cityGrid.style.display === 'none' || !cityGrid.style.display) {
+                    cityGrid.style.display = 'grid';
+                } else {
+                    cityGrid.style.display = 'none';
+                }
+            }
+
+            travelToCity(cityKey) {
+                if (this.traveling || cityKey === this.currentCity) return;
+
+                this.traveling = true;
+                this.travelDestination = cityKey;
+                this.travelProgress = 0;
+
+                // Get travel time based on distance
+                this.travelDuration = CITY_DISTANCES[this.currentCity][cityKey];
+
+                // Show travel modal
+                this.showTravelModal();
+
+                // Start travel progress
+                this.travelInterval = setInterval(() => {
+                    this.travelProgress += (100 / this.travelDuration);
+                    this.updateTravelModal();
+
+                    if (this.travelProgress >= 100) {
+                        this.completeTravel();
+                    }
+                }, 1000);
+            }
+
+            getInstantTravelCost() {
+                if (!this.travelDestination) return 0;
+                // Cost based on distance: $5 per second of travel time
+                const distance = CITY_DISTANCES[this.currentCity][this.travelDestination];
+                return distance * 5;
+            }
+
+            instantTravel() {
+                const cost = this.getInstantTravelCost();
+                if (this.cash >= cost) {
+                    this.cash -= cost;
+                    this.completeTravel();
+                } else {
+                    this.showNotification("❌ Not enough cash for instant travel!");
+                }
+            }
+
+            completeTravel() {
+                clearInterval(this.travelInterval);
+                this.currentCity = this.travelDestination;
+                this.marketTrend = this.cityTrends[this.currentCity];
+                this.traveling = false;
+                this.travelProgress = 0;
+                this.travelDestination = null;
+
+                // Track cities visited for missions
+                this.citiesVisited.add(this.currentCity);
+
+                // Hide travel modal
+                const modal = document.querySelector('.travel-modal');
+                const overlay = document.querySelector('.modal-overlay');
+                if (modal) modal.remove();
+                if (overlay) overlay.remove();
+
+                // Update city display
+                const city = CITIES[this.currentCity];
+                document.getElementById('currentCityName').textContent = city.name;
+                document.getElementById('citySpecialty').textContent = city.specialty;
+
+                // Regenerate market for new city
+                this.generateMarket();
+                this.updateMissionProgress();
+                this.updateUI();
+                this.renderCityGrid();
+
+                this.showNotification(`✈️ Arrived in ${city.icon} ${city.name}!`);
+
+                // Hide city grid
+                document.getElementById('cityGrid').style.display = 'none';
+            }
+
+            showTravelModal() {
+                const city = CITIES[this.travelDestination];
+                const instantCost = this.getInstantTravelCost();
+
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                document.body.appendChild(overlay);
+
+                const modal = document.createElement('div');
+                modal.className = 'travel-modal';
+                modal.innerHTML = `
+                    <h3>✈️ Traveling to ${city.icon} ${city.name}</h3>
+                    <div class="travel-progress">
+                        <div class="travel-progress-bar" id="travelProgressBar">0%</div>
+                    </div>
+                    <p style="text-align: center; opacity: 0.8;">Travel time: ${this.travelDuration} seconds</p>
+                    <div class="travel-options">
+                        <button onclick="game.instantTravel()">⚡ Instant Travel ($${instantCost})</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            updateTravelModal() {
+                const progressBar = document.getElementById('travelProgressBar');
+                if (progressBar) {
+                    const percent = Math.min(100, Math.round(this.travelProgress));
+                    progressBar.style.width = percent + '%';
+                    progressBar.textContent = percent + '%';
+                }
+            }
+
+            renderCityGrid() {
+                const cityGrid = document.getElementById('cityGrid');
+                cityGrid.innerHTML = Object.entries(CITIES).map(([key, city]) => {
+                    const trend = this.cityTrends[key];
+                    let trendText = '';
+                    let trendClass = '';
+                    if (trend > 1.05) {
+                        trendText = '📈 Bull';
+                        trendClass = 'profit';
+                    } else if (trend < 0.95) {
+                        trendText = '📉 Bear';
+                        trendClass = 'loss';
+                    } else {
+                        trendText = '➡️ Stable';
+                    }
+
+                    const isCurrent = key === this.currentCity;
+                    const isTraveling = this.traveling && key === this.travelDestination;
+                    const travelTime = CITY_DISTANCES[this.currentCity][key];
+
+                    return `
+                        <div class="city-card ${isCurrent ? 'current' : ''} ${isTraveling ? 'traveling' : ''}"
+                             onclick="${!isCurrent && !this.traveling ? `game.travelToCity('${key}')` : ''}">
+                            <div class="city-icon">${city.icon}</div>
+                            <div class="city-card-name">${city.name}</div>
+                            <div class="city-trend ${trendClass}">${trendText}</div>
+                            ${!isCurrent ? `
+                                <div class="city-prices">
+                                    ${city.priceMultipliers.coins < 1 ? '💰 Low' : city.priceMultipliers.coins > 1 ? '💸 High' : '💵 Fair'}
+                                </div>
+                                <div style="font-size: 0.7em; opacity: 0.7; margin-top: 4px;">
+                                    ⏱️ ${travelTime}s
+                                </div>
+                            ` : '<div style="margin-top: 8px;">📍 Current</div>'}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            renderAchievements() {
+                const achievementGrid = document.getElementById('achievementGrid');
+                const unlocked = Object.values(this.achievements).filter(a => a.unlocked).length;
+                const total = Object.keys(this.achievements).length;
+
+                document.getElementById('achievementCount').textContent = `${unlocked}/${total} Unlocked`;
+
+                achievementGrid.innerHTML = Object.entries(this.achievements).map(([key, achievement]) => `
+                    <div class="achievement-card ${achievement.unlocked ? 'unlocked' : ''}">
+                        <div class="achievement-icon">${achievement.icon}</div>
+                        <div class="achievement-name">${achievement.name}</div>
+                        <div class="achievement-desc">${achievement.desc}</div>
+                    </div>
+                `).join('');
+            }
+
+            buyUpgrade(upgradeKey) {
+                const upgrade = this.upgrades[upgradeKey];
+                if (this.cash >= upgrade.cost && !upgrade.bought) {
+                    this.cash -= upgrade.cost;
+                    upgrade.level++;
+                    upgrade.bought = true;
+                    upgrade.cost = Math.round(upgrade.cost * 2);
+                    upgrade.bought = false; // Can buy again
+
+                    if (upgradeKey === 'vaultSpace') {
+                        this.vaultCapacity += 25;
+                    }
+
+                    this.showNotification(`⚡ Upgrade purchased!`);
+                    this.updateUI();
+                    this.setupUpgrades();
+                } else {
+                    this.showNotification("❌ Can't afford upgrade!");
+                }
+            }
+
+            setupUpgrades() {
+                const upgradeGrid = document.getElementById('upgradeGrid');
+                upgradeGrid.innerHTML = `
+                    <div class="upgrade-card">
+                        <h3>🏦 Vault Expansion</h3>
+                        <p>Increase vault capacity by 25 items</p>
+                        <p>Current: ${this.vaultCapacity} items</p>
+                        <button onclick="game.buyUpgrade('vaultSpace')">
+                            Buy - $${this.upgrades.vaultSpace.cost}
+                        </button>
+                    </div>
+                    <div class="upgrade-card">
+                        <h3>📈 Better Market</h3>
+                        <p>+2 items in market listings</p>
+                        <p>Level: ${this.upgrades.betterMarket.level}</p>
+                        <button onclick="game.buyUpgrade('betterMarket')">
+                            Buy - $${this.upgrades.betterMarket.cost}
+                        </button>
+                    </div>
+                    <div class="upgrade-card">
+                        <h3>🍀 Lucky Finder</h3>
+                        <p>Increased chance for rare items</p>
+                        <p>Level: ${this.upgrades.luckyFinder.level}</p>
+                        <button onclick="game.buyUpgrade('luckyFinder')">
+                            Buy - $${this.upgrades.luckyFinder.cost}
+                        </button>
+                    </div>
+                `;
+            }
+
+            updateUI() {
+                document.getElementById('cash').textContent = this.cash.toLocaleString();
+                document.getElementById('netWorth').textContent = this.getNetWorth().toLocaleString();
+                document.getElementById('collectionCount').textContent = this.getTotalVaultItems();
+                document.getElementById('refreshCost').textContent = this.refreshCost;
+
+                this.renderMarket();
+                this.renderVault();
+                this.renderTransactionLog();
+            }
+
+            renderTransactionLog() {
+                const transactionLog = document.getElementById('transactionLog');
+
+                // Calculate total profit
+                const totalProfit = this.transactions
+                    .filter(t => t.type === 'sell')
+                    .reduce((sum, t) => sum + t.profit, 0);
+
+                document.getElementById('totalProfit').textContent = totalProfit >= 0 ?
+                    `+$${Math.round(totalProfit)}` :
+                    `-$${Math.abs(Math.round(totalProfit))}`;
+                document.getElementById('totalProfit').className = totalProfit >= 0 ? 'log-stat-value profit' : 'log-stat-value loss';
+                document.getElementById('totalTransactions').textContent = this.transactions.length;
+
+                if (this.transactions.length === 0) {
+                    transactionLog.innerHTML = '<div class="empty-log">No transactions yet. Start trading!</div>';
+                    return;
+                }
+
+                // Show last 50 transactions
+                const recentTransactions = this.transactions.slice(0, 50);
+
+                transactionLog.innerHTML = recentTransactions.map(transaction => {
+                    if (transaction.type === 'buy') {
+                        return `
+                            <div class="transaction-item buy">
+                                <div class="transaction-details">
+                                    <div class="transaction-type">🛒 BOUGHT</div>
+                                    <div class="transaction-info">
+                                        ${transaction.icon} ${transaction.item}
+                                        ${transaction.isFlashSale ? '<span style="color: #e74c3c;">⚡</span>' : ''}
+                                    </div>
+                                    <div class="transaction-time">${transaction.time}</div>
+                                </div>
+                                <div class="transaction-amount">
+                                    -$${transaction.price}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        const profitClass = transaction.profit >= 0 ? 'profit' : 'loss';
+                        const profitText = transaction.profit >= 0 ?
+                            `+$${Math.round(transaction.profit)}` :
+                            `-$${Math.abs(Math.round(transaction.profit))}`;
+                        return `
+                            <div class="transaction-item sell">
+                                <div class="transaction-details">
+                                    <div class="transaction-type">💰 SOLD</div>
+                                    <div class="transaction-info">
+                                        ${transaction.icon} ${transaction.item}
+                                    </div>
+                                    <div class="transaction-info">
+                                        Cost: $${Math.round(transaction.costBasis)} → Sale: $${transaction.price}
+                                    </div>
+                                    <div class="transaction-time">${transaction.time}</div>
+                                </div>
+                                <div class="transaction-amount">
+                                    <div>+$${transaction.price}</div>
+                                    <div class="${profitClass}" style="font-size: 0.85em;">${profitText}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }).join('');
+            }
+
+            renderMarket() {
+                // Render market trend
+                const marketTrendEl = document.getElementById('marketTrend');
+                let trendText = '';
+                let trendClass = '';
+                if (this.marketTrend > 1.05) {
+                    trendText = '📈 BULL MARKET - Prices are high!';
+                    trendClass = 'bull';
+                } else if (this.marketTrend < 0.95) {
+                    trendText = '📉 BEAR MARKET - Buying opportunity!';
+                    trendClass = 'bear';
+                } else {
+                    trendText = '➡️ STABLE MARKET - Normal prices';
+                    trendClass = '';
+                }
+                marketTrendEl.innerHTML = `<div class="market-trend ${trendClass}">${trendText}</div>`;
+
+                // Render news
+                const newsTickerEl = document.getElementById('newsTicker');
+                if (this.currentNews) {
+                    newsTickerEl.innerHTML = `<div class="news-ticker">${this.currentNews.text}</div>`;
+                } else {
+                    newsTickerEl.innerHTML = '';
+                }
+
+                // Render items
+                const marketItems = document.getElementById('marketItems');
+                marketItems.innerHTML = this.market.map((item, index) => `
+                    <div class="market-item ${item.rarity} ${item.isFlashSale ? 'flash-sale' : ''}">
+                        <div class="item-info">
+                            <div class="item-name">
+                                ${item.icon} ${item.name}
+                                <span class="rarity-badge rarity-${item.rarity}">${item.rarity}</span>
+                            </div>
+                            <div class="item-details">${item.type}</div>
+                        </div>
+                        <div class="item-price">$${item.currentPrice}</div>
+                        <div class="item-actions">
+                            <button onclick="game.buyItem(${index})">Buy</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderVault() {
+                const vaultGrid = document.getElementById('vaultGrid');
+                const vaultItems = Object.entries(this.vault);
+
+                if (vaultItems.length === 0) {
+                    vaultGrid.innerHTML = '<div class="empty-vault">Your vault is empty. Start buying silver!</div>';
+                    return;
+                }
+
+                vaultGrid.innerHTML = vaultItems.map(([key, item]) => {
+                    const currentPrice = item.template.currentPrice;
+                    const sellPrice = Math.round(currentPrice * 0.9);
+                    const avgCost = this.purchasePrices[key].avgPrice;
+                    const potentialProfit = sellPrice - avgCost;
+                    const profitClass = potentialProfit >= 0 ? 'profit' : 'loss';
+                    const profitText = potentialProfit >= 0 ?
+                        `+$${Math.round(potentialProfit)}` :
+                        `-$${Math.abs(Math.round(potentialProfit))}`;
+
+                    return `
+                        <div class="vault-item ${item.template.rarity}">
+                            <div class="vault-item-icon">${item.template.icon}</div>
+                            <div class="vault-item-name">${item.template.name}</div>
+                            <div class="vault-item-count">Owned: ${item.count}</div>
+                            <div style="margin-top: 8px; font-size: 0.85em; opacity: 0.8;">
+                                Cost: $${Math.round(avgCost)}
+                            </div>
+                            <div style="margin-top: 4px; font-size: 0.9em;">
+                                Market: $${currentPrice}
+                            </div>
+                            <div style="margin-top: 4px; font-size: 0.85em;" class="${profitClass}">
+                                ${profitText}
+                            </div>
+                            <button class="sell-btn" onclick="game.sellItem('${key}')" style="margin-top: 10px; font-size: 0.8em;">
+                                Sell for $${sellPrice}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            showNotification(message) {
+                const existing = document.querySelector('.notification');
+                if (existing) existing.remove();
+
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = message;
+                document.body.appendChild(notification);
+
+                setTimeout(() => notification.remove(), 3000);
+            }
+
+            saveGame() {
+                const saveData = {
+                    version: '1.0',
+                    cash: this.cash,
+                    vault: {},
+                    transactions: this.transactions,
+                    purchasePrices: this.purchasePrices,
+                    stats: this.stats,
+                    currentCity: this.currentCity,
+                    cityTrends: this.cityTrends,
+                    upgrades: this.upgrades,
+                    vaultCapacity: this.vaultCapacity,
+                    marketSize: this.marketSize,
+                    refreshCost: this.refreshCost,
+                    achievements: {}
+                };
+
+                // Serialize vault (convert SilverItem instances to plain objects)
+                for (const key in this.vault) {
+                    saveData.vault[key] = {
+                        template: {
+                            type: this.vault[key].template.type,
+                            name: this.vault[key].template.name,
+                            basePrice: this.vault[key].template.basePrice,
+                            rarity: this.vault[key].template.rarity,
+                            icon: this.vault[key].template.icon,
+                            currentPrice: this.vault[key].template.currentPrice
+                        },
+                        count: this.vault[key].count
+                    };
+                }
+
+                // Save achievements (only save unlocked status)
+                for (const key in this.achievements) {
+                    saveData.achievements[key] = {
+                        unlocked: this.achievements[key].unlocked
+                    };
+                }
+
+                try {
+                    localStorage.setItem('silverTraderSave', JSON.stringify(saveData));
+                    this.showNotification('💾 Game saved successfully!');
+                } catch (e) {
+                    this.showNotification('❌ Failed to save game!');
+                    console.error('Save error:', e);
+                }
+            }
+
+            loadGame() {
+                try {
+                    const saveData = JSON.parse(localStorage.getItem('silverTraderSave'));
+                    if (!saveData) {
+                        this.showNotification('❌ No saved game found!');
+                        return;
+                    }
+
+                    // Restore basic properties
+                    this.cash = saveData.cash;
+                    this.stats = saveData.stats;
+                    this.currentCity = saveData.currentCity;
+                    this.cityTrends = saveData.cityTrends;
+                    this.upgrades = saveData.upgrades;
+                    this.vaultCapacity = saveData.vaultCapacity;
+                    this.marketSize = saveData.marketSize;
+                    this.refreshCost = saveData.refreshCost;
+                    this.transactions = saveData.transactions;
+                    this.purchasePrices = saveData.purchasePrices;
+
+                    // Restore vault (recreate SilverItem instances)
+                    this.vault = {};
+                    for (const key in saveData.vault) {
+                        const itemData = saveData.vault[key];
+                        const item = new SilverItem(
+                            itemData.template.type,
+                            itemData.template.name,
+                            itemData.template.basePrice,
+                            itemData.template.rarity,
+                            itemData.template.icon
+                        );
+                        item.currentPrice = itemData.template.currentPrice;
+                        this.vault[key] = {
+                            template: item,
+                            count: itemData.count
+                        };
+                    }
+
+                    // Restore achievements
+                    for (const key in saveData.achievements) {
+                        if (this.achievements[key]) {
+                            this.achievements[key].unlocked = saveData.achievements[key].unlocked;
+                        }
+                    }
+
+                    // Update city display
+                    const city = CITIES[this.currentCity];
+                    document.getElementById('currentCityName').textContent = city.name;
+                    document.getElementById('citySpecialty').textContent = city.specialty;
+
+                    // Regenerate market and update UI
+                    this.marketTrend = this.cityTrends[this.currentCity];
+                    this.generateMarket();
+                    this.updateUI();
+                    this.setupUpgrades();
+                    this.renderAchievements();
+                    this.renderCityGrid();
+
+                    this.showNotification('📂 Game loaded successfully!');
+                } catch (e) {
+                    this.showNotification('❌ Failed to load game!');
+                    console.error('Load error:', e);
+                }
+            }
+
+            newGame() {
+                const confirmed = confirm(
+                    '🆕 Start a New Game?\n\n' +
+                    'This will:\n' +
+                    '• Reset all progress\n' +
+                    '• Clear your collection\n' +
+                    '• Delete your saved game\n\n' +
+                    'Are you sure you want to continue?'
+                );
+
+                if (confirmed) {
+                    // Clear localStorage
+                    localStorage.removeItem('silverTraderSave');
+
+                    // Reload the page to start fresh
+                    this.showNotification('🆕 Starting new game...');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                }
+            }
+
+            // Daily Bonus System
+            checkDailyBonus() {
+                const today = new Date().toDateString();
+                if (this.dailyBonus.lastClaim !== today) {
+                    return true;
+                }
+                return false;
+            }
+
+            claimDailyBonus() {
+                if (!this.checkDailyBonus()) {
+                    this.showNotification("❌ Already claimed today!");
+                    return;
+                }
+
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayString = yesterday.toDateString();
+
+                if (this.dailyBonus.lastClaim === yesterdayString) {
+                    this.dailyBonus.streak++;
+                } else if (this.dailyBonus.lastClaim !== null) {
+                    this.dailyBonus.streak = 1;
+                } else {
+                    this.dailyBonus.streak = 1;
+                }
+
+                const bonus = this.dailyBonus.baseReward + (this.dailyBonus.streak - 1) * 50;
+                this.cash += bonus;
+                this.dailyBonus.lastClaim = new Date().toDateString();
+
+                this.showNotification(`📅 Daily bonus claimed! +$${bonus} (${this.dailyBonus.streak} day streak)`);
+                this.renderIncomePanel();
+                this.updateUI();
+            }
+
+            // Missions System
+            updateMissionProgress() {
+                for (const mission of this.missions) {
+                    if (mission.completed) continue;
+
+                    switch (mission.type) {
+                        case 'trades':
+                            mission.progress = this.stats.totalBuys + this.stats.totalSells;
+                            break;
+                        case 'collection':
+                            mission.progress = this.getTotalVaultItems();
+                            break;
+                        case 'profit':
+                            mission.progress = this.stats.totalEarned;
+                            break;
+                        case 'cities':
+                            mission.progress = this.citiesVisited.size;
+                            break;
+                        case 'legendary':
+                            mission.progress = this.stats.legendariesFound;
+                            break;
+                    }
+
+                    if (mission.progress >= mission.target && !mission.completed) {
+                        mission.completed = true;
+                    }
+                }
+                this.renderIncomePanel();
+            }
+
+            claimMissionReward(missionId) {
+                const mission = this.missions.find(m => m.id === missionId);
+                if (mission && mission.completed && mission.progress >= mission.target) {
+                    this.cash += mission.reward;
+                    this.showNotification(`✅ Contract completed! Earned $${mission.reward}`);
+                    mission.progress = 0;
+                    mission.completed = false;
+                    this.updateUI();
+                    this.renderIncomePanel();
+                }
+            }
+
+            // Market Prediction System
+            placePrediction(cityKey, prediction, amount) {
+                if (this.marketPrediction.active) {
+                    this.showNotification("❌ Already have an active prediction!");
+                    return;
+                }
+
+                if (this.cash < amount) {
+                    this.showNotification("❌ Not enough cash!");
+                    return;
+                }
+
+                if (amount < 50) {
+                    this.showNotification("❌ Minimum bet is $50!");
+                    return;
+                }
+
+                this.cash -= amount;
+                this.marketPrediction = {
+                    active: true,
+                    targetCity: cityKey,
+                    prediction: prediction,
+                    betAmount: amount,
+                    startTrend: this.cityTrends[cityKey],
+                    timeRemaining: 60,
+                    duration: 60
+                };
+
+                this.showNotification(`📊 Futures contract placed! Predicting ${prediction} market in ${CITIES[cityKey].name}`);
+                this.startPredictionTimer();
+                this.renderIncomePanel();
+                this.updateUI();
+            }
+
+            startPredictionTimer() {
+                const predictionInterval = setInterval(() => {
+                    this.marketPrediction.timeRemaining--;
+                    this.renderIncomePanel();
+
+                    if (this.marketPrediction.timeRemaining <= 0) {
+                        clearInterval(predictionInterval);
+                        this.resolvePrediction();
+                    }
+                }, 1000);
+            }
+
+            resolvePrediction() {
+                const endTrend = this.cityTrends[this.marketPrediction.targetCity];
+                const startTrend = this.marketPrediction.startTrend;
+
+                let actualOutcome = 'stable';
+                if (endTrend > startTrend * 1.02) {
+                    actualOutcome = 'bull';
+                } else if (endTrend < startTrend * 0.98) {
+                    actualOutcome = 'bear';
+                }
+
+                const won = actualOutcome === this.marketPrediction.prediction;
+
+                if (won) {
+                    const winnings = this.marketPrediction.betAmount * 2;
+                    this.cash += winnings;
+                    this.showNotification(`🎉 Futures contract successful! Won $${winnings}!`);
+                } else {
+                    this.showNotification(`📉 Futures contract expired. Lost $${this.marketPrediction.betAmount}`);
+                }
+
+                this.marketPrediction.active = false;
+                this.renderIncomePanel();
+                this.updateUI();
+            }
+
+            renderIncomePanel() {
+                // Daily Bonus
+                const dailyBonusContent = document.getElementById('dailyBonusContent');
+                const canClaim = this.checkDailyBonus();
+                const bonus = this.dailyBonus.baseReward + (this.dailyBonus.streak) * 50;
+
+                dailyBonusContent.innerHTML = `
+                    <div class="streak-counter">🔥 ${this.dailyBonus.streak} Day Streak</div>
+                    <div class="daily-reward-amount">$${bonus}</div>
+                    <p style="text-align: center; font-size: 0.85em; opacity: 0.8; margin-bottom: 10px;">
+                        +$50 per consecutive day
+                    </p>
+                    ${canClaim ?
+                        '<button class="claim-btn" onclick="game.claimDailyBonus()">Claim Bonus</button>' :
+                        '<p style="text-align: center; opacity: 0.7;">✅ Claimed today! Come back tomorrow</p>'
+                    }
+                `;
+
+                // Missions
+                const missionsContent = document.getElementById('missionsContent');
+                missionsContent.innerHTML = `
+                    <div class="mission-list">
+                        ${this.missions.map(mission => `
+                            <div class="mission-item ${mission.completed ? 'completed' : ''}">
+                                <div class="mission-title">${mission.name}</div>
+                                <div class="mission-progress">
+                                    ${mission.desc}: ${Math.min(mission.progress, mission.target)}/${mission.target}
+                                </div>
+                                <div class="mission-reward">Reward: $${mission.reward}</div>
+                                ${mission.completed ?
+                                    `<button class="claim-btn" onclick="game.claimMissionReward(${mission.id})">Claim Reward</button>` :
+                                    ''
+                                }
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                // Market Predictions
+                const predictionsContent = document.getElementById('predictionsContent');
+                if (this.marketPrediction.active) {
+                    const city = CITIES[this.marketPrediction.targetCity];
+                    predictionsContent.innerHTML = `
+                        <div class="active-prediction">
+                            <div style="font-size: 1.1em; margin-bottom: 10px;">
+                                ${city.icon} ${city.name}
+                            </div>
+                            <div>Predicting: <strong>${this.marketPrediction.prediction.toUpperCase()}</strong></div>
+                            <div class="prediction-timer">${this.marketPrediction.timeRemaining}s</div>
+                            <div style="font-size: 0.9em; opacity: 0.8;">
+                                Bet: $${this.marketPrediction.betAmount} | Win: $${this.marketPrediction.betAmount * 2}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    predictionsContent.innerHTML = `
+                        <p style="font-size: 0.9em; margin-bottom: 10px;">
+                            Bet on whether a city's market will trend bullish or bearish in 60 seconds. Win = 2x your bet!
+                        </p>
+                        <div class="prediction-form">
+                            <select id="predictionCity" class="prediction-input">
+                                ${Object.entries(CITIES).map(([key, city]) =>
+                                    `<option value="${key}">${city.icon} ${city.name}</option>`
+                                ).join('')}
+                            </select>
+                            <div class="prediction-select">
+                                <button class="prediction-btn bull" onclick="game.placePrediction(document.getElementById('predictionCity').value, 'bull', parseInt(document.getElementById('predictionAmount').value))">
+                                    📈 BULL
+                                </button>
+                                <button class="prediction-btn bear" onclick="game.placePrediction(document.getElementById('predictionCity').value, 'bear', parseInt(document.getElementById('predictionAmount').value))">
+                                    📉 BEAR
+                                </button>
+                            </div>
+                            <input type="number" id="predictionAmount" class="prediction-input" placeholder="Bet amount (min $50)" min="50" value="100">
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        const game = new Game();
+    </script>
+<script>
+(function(){
+  const tabs = document.getElementById('mobileTabs');
+  if(!tabs) return;
+
+  const tabButtons = Array.from(tabs.querySelectorAll('.tab'));
+  const panels = tabButtons
+    .map(b => document.getElementById(b.dataset.target))
+    .filter(Boolean);
+
+  function activate(id){
+    tabButtons.forEach(b => b.classList.toggle('active', b.dataset.target === id));
+    panels.forEach(p => p.classList.toggle('is-active', p.id === id));
+    // Keep viewport stable when switching
+    const activePanel = document.getElementById(id);
+    if(activePanel) activePanel.scrollIntoView({block:'start', behavior:'smooth'});
+  }
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => activate(btn.dataset.target));
+  });
+
+  // Default active panel on load (Market)
+  // Only apply on small screens; desktop should show all.
+  function applyResponsive(){
+    if(window.matchMedia('(max-width: 980px)').matches){
+      activate('panel-market');
+    } else {
+      // Desktop: show everything
+      panels.forEach(p => p.classList.add('is-active'));
+      tabButtons.forEach(b => b.classList.remove('active'));
+      const first = tabButtons[0];
+      if(first) first.classList.add('active');
+    }
+  }
+
+  window.addEventListener('resize', applyResponsive);
+  applyResponsive();
+})();
+</script>
+
+<script>
+(() => {
+  const tabs = document.getElementById('mainTabs');
+  if (!tabs) return;
+
+  const btns = [...tabs.querySelectorAll('button[data-main]')];
+  const panels = [...document.querySelectorAll('[data-main-panel]')];
+
+  function activate(key){
+    btns.forEach(b => b.classList.toggle('active', b.dataset.main === key));
+    panels.forEach(p => p.classList.toggle('is-active', p.dataset.mainPanel === key));
+  }
+
+  btns.forEach(b => b.addEventListener('click', () => activate(b.dataset.main)));
+
+  // default
+  activate('trade');
+})();
+</script>
+
+</body>
+</html>
