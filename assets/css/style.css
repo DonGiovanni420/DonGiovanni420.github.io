@@ -120,7 +120,7 @@ header {
   color: var(--muted);
 	text-decoration: none;
 	font-size: 0.95rem;
-	padding 4px 0;
+	padding: 4px 0;
   border-bottom: 2px solid transparent; 
 }
 
@@ -135,8 +135,7 @@ header {
 }
 
 .site-header {
-	background: var(--bg_);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	background: var(--bg);
 }
 
 .site-nav {
