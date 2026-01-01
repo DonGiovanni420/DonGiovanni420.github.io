@@ -19,8 +19,8 @@
   --radius: 14px;
   --radius-sm: 10px;
 
-  --max: 1080px;
-  --pad: clamp(16px, 3vw, 28px);
+  --max: 980px;
+  --pad: clamp(18px, 3.5vw, 36px);
 }
 
 * { box-sizing: border-box; }
