@@ -172,6 +172,7 @@ header {
 	gap: 14px;
 	flex-wrap: wrap;
 	justify-content: flex-end;
+	margin-left: auto;
 }
 
 .site-header .navlinks a {
