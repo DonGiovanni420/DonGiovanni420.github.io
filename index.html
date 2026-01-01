@@ -4,26 +4,35 @@
   <meta charset="UTF-8">
   <title>Silver-Stack.com - Simple Silver Education</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="SHORT_DESCRIPTION_HERE">
+  <meta name="description" content="Silver Stack is a collection of silver buying, collecting and storing knowledge. Focused on helping beginner silver stackers make educated decisions when it comes to growing their silver coin or bar collection. Also equipped with unique tools and calculators as well as a variety of articles about the history of silver.">
   <meta name="fo-verify" content="d6ea627a-5c01-4516-b4b5-229844a0aba9" />
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body>
-  <header>
-    <div class="nav">
-      <div class="brand"><span class="dot"></span>Silver Made Simple</div>
-      <nav class="navlinks">
-        <a href="/">Home</a> |
-        <a href="/history/">History</a> |
-        <a href="/buying/">Buying</a> |
-        <a href="/storage/">Storage</a> |
-        <a href="/tools/">Tools</a> |
-        <a href="/articles/">Articles</a> |
-        <a href="/about/">About</a>
-      </nav>
-    </div>
+  <header class="site-header">
+		<div class="container nav-wrap">
+			<a class="brand" href="/">
+				<span class="dot" aria-hidden="true"</span>
+				<span>Silver Stack : Silver Made Simple</span>
+			</a>
+
+			<button class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+				Menu
+			</button>
+
+			<nav id="site-nav" class="site-nav" aria-label="Primary navigation">
+				<a href="/">Home</a>
+				<a href="/history/">History</a>
+				<a href="/buying/">Buying</a>
+				<a href="/storage/">Storage</a>
+				<a href="/tools/">Tools</a>
+				<a href="/articles/">Articles</a>
+				<a href="/about/">About</a>
+			</nav>
+		</div>
   </header>
-  <main class="container">
+  
+	<main class="container">
     <section class="hero">
       <div class="hero-inner">
         <div>
@@ -72,5 +81,17 @@
   </footer>
 
   <script src="/assets/js/spot.js"></script>
+	<script>
+		(function () {
+			const btn = document.querySelector('.nav-toggle');
+			const nav = document.querySelector('#site-nav');
+			if (!btn || !nav) return;
+
+			btn.addEventListener('click', () => {
+				const open = nav.classList.toggle('is-open');
+				btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+			});
+		})();
+	</script>
 </body>
 </html>

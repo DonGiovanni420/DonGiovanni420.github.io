@@ -1,26 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Silver Stack Value Calculator</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Calculate the value of your silver collection according to spot price">
+	<link rel="stylesheet" href="/assets/css/style.css">
+</head>
 
-<h1>Silver Stack Value Calculator</h1>
+<body>
+	<header>
+		<div class="nav">
+			<div class="brand"><span class="dot"></span>Silver Made Simple</div>
+			<nav class="navlinks">
+				<a href="/">Home</a> |
+				<a href="/education/">Education</a> |
+				<a href="/buying/">Buying</a> |
+				<a href="/storage/">Storage</a> |
+				<a href="/tools/">Tools</a> |
+				<a href="/articles/">Articles</a> |
+				<a href="/about/">About</a>
+			</nav>
+		</div>
+	</header>
 
-<p>Estimate to the current value of your silver holdings.</p>
-<label>
-  Ounces owned:
-  <input type="number" id="ounces" step="0.01" min="0">
-</label>
+	<main class="container">
+		<section class="section">
+			<h1>Silver Stack Value Calculator</h1>
+			<p>
+				Estimate to the current value of your silver holdings.
+			</p>
+			<div class="card" style="max-width: 720px;">
 
-<button onclick="calc()">Calculate</button>
+				<p>
+					<strong>Current Spot:</strong>
+					<span id="spot">Loading...</span>
+					<br>
+					<small id="spot-updated"></small>
+				</p>
 
-<p id="result"></p>
+				<label style="display:block; margin-top:12px;">
+					Total Ounces Owned(troy oz):
+  				<input type="number" id="ounces" step="0.01" min="0" placeholder="e.g. 167.5" style="width:100%; margin-top:6px;">
+				</label>
 
-<script>
-async function calc() {
-    const oz = Number(document.getElementById("ounces").value);
-    if (!oz) return;
+				<div class="btnrow" style="margin-top:14px;">
+					<button class="btn primary" id="calcBtn" type="button">Calculate</button>
+          <button class="btn" id="resetBtn" type="button">Reset</button>
+				</div>
 
-    const res = await fetch("/assets/data/spot.json?v=" + Date.now());
-    const data = await res.json();
+				<div id="resultBox" class="callout" style="margin-top:14px; display:none;">
+					<strong>RESULT:</strong>
+					<div id="resultText" style="margin-top:8px;"></div>
+				</div>
 
-    const value = oz * data.price;
-    document.getElementById("result").textContent =
-      `Estimated value: $${value.toFixed(2)} USD`;
-  }
-</script>
+				<p style="margin-top:12px;">
+					<small>
+						Notes: The value of your silver stack is calculated based purely on spot price. High premium silver could increase your total significantly.
+					</small>
+				</p>
+			</div>
+		</section>
+	</main>
+	
+	<footer>
+		<div class="container">
+			Educational content only. Some links may be affiliate links.
+		</div>
+	</footer>
+
+	<script>
+		let spotPrice = null;
+
+    function money(n) {
+      return `$${Number(n).toFixed(2)}`;
+    }
+
+		async function loadSpot() {
+			const spotEl = document.getElementById("spot");
+			const updatedEl = document.getElementById("spot-updated");
+
+			try {
+				const res = await fetch(`/assets/data/spot.json?v=${Date.now()}`, { cache: "no-store" });
+				const data = await res.json();
+
+				spotPrice = Number(data.price);
+        spotEl.textContent = money(spotPrice);
+				updatedEl.textContent = `Updated: ${data.updated_utc} (UTC)`;
+			} catch (e) {
+				console.error("Failed to load spot.json:", e);
+				spotEl.textContent = "-";
+				updatedEl.textContent = "";
+				spotPrice = null;
+			}
+		}
+
+		function calc() {
+      const resultBox = document.getElementById("resultBox");
+      const resultText = document.getElementById("resultText");
+
+      const ounces = Number(document.getElementById("ounces").value);
+
+      resultBox.style.display = "block";
+
+      if (!spotPrice || spotPrice <= 0) {
+        resultText.textContent = "Spot price isn't available right now. Try again in a moment.";
+        return;
+      }
+
+      if (!ounces || ounces <= 0) {
+        resultText.textContent = "Enter a valid number of ounces.";
+        return;
+      }
+
+      const value = ounces * spotPrice;
+
+      resultText.innerHTML = `
+        <div><strong>Estimated value:</strong> ${money(value)}</div>
+        <div style="margin-top:10px;"><small>
+          Based on a spot price of ${money(spotPrice)}/oz.
+        </small></div>
+      `;
+    }
+
+    function resetForm() {
+      document.getElementById("ounces").value = "";
+      document.getElementById("resultBox").style.display = "none";
+      document.getElementById("resultText").textContent = "";
+    }
+
+    document.getElementById("calcBtn").addEventListener("click", calc);
+    document.getElementById("resetBtn").addEventListener("click", resetForm);
+
+    loadSpot();
+	</script>
+</body>
+</html>

@@ -71,12 +71,22 @@ header {
   padding: 14px var(--pad);
 }
 
+.nav-toggle {
+	display: none;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+	text-decoration: none;
+  font-weight: 800;
+	white-space: nowrap;
 }
 
 .brand .dot {
@@ -107,6 +117,53 @@ header {
   text-decoration: none;
   border-color: var(--border);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.site-header {
+	position: sticky;
+	top: 0;
+	background: rgba(255, 255, 255, 0.92);
+	backdrop-filter: blur(8px);
+	border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.site-nav {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.site-nav a {
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.site-nav a:hover { background: rgba(0,0,0,0.06); }
+
+.nav-wrap {
+	display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  flex-wrap: wrap;
+}
+
+/* MOBILE DROPDOWN BEHAVIOR */
+@media (max-width: 720px) {
+	.nav-toggle { display: inline-flex; align-items: center; }
+	.site-nav {
+	  display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 10px 0 6px;
+	}
+	.site-nav-is-open { display: flex; }
+	.site-nav a { padding: 10px 12px; }
 }
 
 /* == HERO == */
